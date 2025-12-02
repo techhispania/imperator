@@ -13,7 +13,7 @@ RUN mkdir -p /opt/imperator-server
 WORKDIR /opt/imperator-server
 
 # copy the jar previously created into the application directory
-COPY target/*.jar /opt/imperator-server
+COPY target/*.jar /opt/imperator-server/imperator-server.jar
 
 # change the owner of the imperator-server directory
 RUN chown -R imperator-server:imperator-server /opt/imperator-server
