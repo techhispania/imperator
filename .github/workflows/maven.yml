@@ -55,7 +55,7 @@ jobs:
       run: |
         RESPONSE=$(wget -qO- http://localhost:8080/)
         echo "Response: $RESPONSE"
-        if [[ "$RESPONSE" != " <h1>Test page</h1>" ]]; then
+        if [[ "$RESPONSE" != "<h1>Test page</h1>" ]]; then
           echo "Unexpected server response"
           exit 1
         fi
