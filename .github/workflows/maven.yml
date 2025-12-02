@@ -51,8 +51,15 @@ jobs:
         docker logs imperator-server
         exit 1
 
-    - name: Check index page
-      run: wget -qO- http://localhost:8080/
+    - name: Check Server Health Response
+      run: |
+        RESPONSE=$(wget -qO- http://localhost:8080/)
+        echo "Response: $RESPONSE"
+        if [[ "$RESPONSE" != " <h1>Test page</h1>" ]]; then
+          echo "Unexpected server response"
+          exit 1
+        fi
+        echo "Server response matches expected value"
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     #- name: Update dependency graph
