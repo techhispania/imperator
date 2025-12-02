@@ -10,9 +10,9 @@ name: Imperator Server Deploy
 
 on:
   push:
-    branches: [ "feature/cicd_configuration" ]
+    branches: [ "develop", "main" ]
   pull_request:
-    branches: [ "feature/cicd_configuration" ]
+    branches: [ "develop", "main" ]
 
 jobs:
   build:
