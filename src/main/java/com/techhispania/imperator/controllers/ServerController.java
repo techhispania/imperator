@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import com.techhispania.imperator.common.annotations.Controller;
 import com.techhispania.imperator.common.annotations.GetRequest;
 import com.techhispania.imperator.common.annotations.PostRequest;
+import com.techhispania.imperator.common.annotations.RequestBody;
 import com.techhispania.imperator.core.http.dto.ImperatorResponse;
 
 @Controller
@@ -28,7 +29,7 @@ public class ServerController {
 	}
 	
 	@PostRequest("/test")
-	public ImperatorResponse<TestPostResponse> testPost(String request) {
+	public ImperatorResponse<TestPostResponse> testPost(@RequestBody TestPostRequest request) {
 		logger.debug("Test Post request: {}", request);
 		
 		TestPostResponse response = new TestPostResponse("This is a test message");
@@ -37,7 +38,7 @@ public class ServerController {
 	}
 	
 	// TODO remove after tests
-	private class TestPostResponse {
+	private static class TestPostResponse {
 		
 		private String message;
 
@@ -58,4 +59,43 @@ public class ServerController {
 			return "TestPostResponse [message=" + message + "]";
 		}
 	}
+	
+	private static class TestPostRequest {
+		
+		private String user;
+		
+		private String city;
+
+		public TestPostRequest() {
+			
+		}
+		
+		public TestPostRequest(String user, String city) {
+			this.user = user;
+			this.city = city;
+		}
+
+		public String getUser() {
+			return user;
+		}
+
+		public void setUser(String user) {
+			this.user = user;
+		}
+
+		public String getCity() {
+			return city;
+		}
+
+		public void setCity(String city) {
+			this.city = city;
+		}
+
+		@Override
+		public String toString() {
+			return "TestPostRequest [user=" + user + ", city=" + city + "]";
+		}	
+	}
 }
+
+

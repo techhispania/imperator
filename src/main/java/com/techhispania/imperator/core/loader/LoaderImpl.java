@@ -2,6 +2,7 @@ package com.techhispania.imperator.core.loader;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -18,12 +19,14 @@ import com.sun.net.httpserver.Headers;
 import com.techhispania.imperator.common.annotations.Controller;
 import com.techhispania.imperator.common.annotations.GetRequest;
 import com.techhispania.imperator.common.annotations.PostRequest;
+import com.techhispania.imperator.common.annotations.RequestBody;
 import com.techhispania.imperator.common.utils.Constants;
 import com.techhispania.imperator.core.http.dto.ImperatorResponse;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.Resource;
 import io.github.classgraph.ScanResult;
+import tools.jackson.databind.ObjectMapper;
 
 public class LoaderImpl implements Loader {
 
@@ -105,7 +108,6 @@ public class LoaderImpl implements Loader {
 					exchange.getResponseBody().write(html.getBytes());
 					exchange.close();
 				} else if (method.isAnnotationPresent(PostRequest.class)) {
-				    String requestBody = new String(exchange.getRequestBody().readAllBytes());
 				    
 				    if (!validHeaders(exchange.getRequestHeaders())) {
 				    	String errorMsg = "Invalid headers received. Review 'Content-Type' and 'Accept' headers";
@@ -114,12 +116,18 @@ public class LoaderImpl implements Loader {
 					    exchange.close();
 					    return;
 				    }
+				    String requestBody = new String(exchange.getRequestBody().readAllBytes());
 
+				    Class<?> requestBodyType = getRequestBodyType(method);
+				    
+				    ObjectMapper mapper = new ObjectMapper();
+				    Object requestObject = mapper.readValue(requestBody, requestBodyType);				    
+				    
 				    ImperatorResponse<?> response;
 				    if (method.getParameterCount() == 1) {
-				        response = (ImperatorResponse<?>) method.invoke(controller, requestBody);
+				        response = (ImperatorResponse<?>) method.invoke(controller, requestObject); // execute the method using reflection
 				    } else {
-				        response = (ImperatorResponse<?>) method.invoke(controller);
+				        response = (ImperatorResponse<?>) method.invoke(controller); // execute the method using reflection
 				    }
 
 				    String json = response.toString();
@@ -135,6 +143,21 @@ public class LoaderImpl implements Loader {
 			}
 		});
 	}
+	
+	/*
+	 * This method look for the method parameter annotated as @RequestBody
+	 * to identify in which type we have to parse the String received in the 
+	 * request body
+	 */
+	private Class<?> getRequestBodyType(Method method) {
+	    Parameter[] parameters = method.getParameters();
+	    for (Parameter parameter : parameters) {
+	    	if (parameter.isAnnotationPresent(RequestBody.class)) {
+	    		return parameter.getType();
+	    	}
+	    }
+	    return null;
+	} 
 	
 	private boolean validHeaders(Headers headers) {
 		boolean valid = true;
