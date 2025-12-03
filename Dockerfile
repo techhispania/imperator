@@ -8,12 +8,16 @@ RUN addgroup -S imperator-server && adduser -S imperator-server -G imperator-ser
 
 # create the directory where the application will be installed
 RUN mkdir -p /opt/imperator-server
+RUN mkdir -p /opt/imperator-server/bin
+RUN mkdir -p /opt/imperator-server/conf
+RUN mkdir -p /opt/imperator-server/lib
+RUN mkdir -p /opt/imperator-server/deployed
 
 # move to the application directory
-WORKDIR /opt/imperator-server
+WORKDIR /opt/imperator-server/lib
 
 # copy the jar previously created into the application directory
-COPY target/*.jar /opt/imperator-server/imperator-server.jar
+COPY target/*.jar /opt/imperator-server/lib/imperator.jar
 
 # change the owner of the imperator-server directory
 RUN chown -R imperator-server:imperator-server /opt/imperator-server
@@ -22,4 +26,4 @@ RUN chown -R imperator-server:imperator-server /opt/imperator-server
 USER imperator-server
 
 # execute the application
-ENTRYPOINT [ "java", "-jar", "imperator-server.jar" ]
+ENTRYPOINT [ "java", "-jar", "imperator.jar" ]
