@@ -13,10 +13,13 @@ import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
 
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.Headers;
 
 import com.techhispania.imperator.common.annotations.Controller;
 import com.techhispania.imperator.common.annotations.GetRequest;
 import com.techhispania.imperator.common.annotations.PostRequest;
+import com.techhispania.imperator.common.utils.Constants;
+import com.techhispania.imperator.core.http.dto.ImperatorResponse;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.Resource;
@@ -75,7 +78,7 @@ public class LoaderImpl implements Loader {
 			return Optional.empty();
 		
 		GetRequest annotation = method.getAnnotation(GetRequest.class);
-		logger.debug("Loading GET Request '" + annotation.value() + "' in method '" + method.getName());
+		logger.debug("Loading GET Request '{}' in method '{}'",annotation.value(), method.getName());
 		return Optional.of(annotation.value());
 	}
 	
@@ -84,26 +87,65 @@ public class LoaderImpl implements Loader {
 			return Optional.empty();
 		
 		PostRequest annotation = method.getAnnotation(PostRequest.class);
-		logger.debug("Loading POST Request '" + annotation.value() + "' in method '" + method.getName());
+		logger.debug("Loading POST Request '{}' in method '{}'", annotation.value(), method.getName());
 		return Optional.of(annotation.value());
 	}
 	
 	private void runEndpoint(HttpServer httpServer, String endpoint, Class<?> classObject, Method method) {
 		httpServer.createContext(endpoint, exchange -> {
-			logger.debug("Request received on endpoint: " + endpoint);
+			logger.debug("Request received on endpoint: {}", endpoint);
 			method.setAccessible(true); // needed to be able to execute a method using reflection
 			try {
 				Object controller = classObject.getDeclaredConstructor().newInstance();
 				
-				String template = (String) method.invoke(controller); // execute the method using reflection
-				String html = getTemplateHtml(template);
-				exchange.sendResponseHeaders(200, html.length());
-				exchange.getResponseBody().write(html.getBytes());
-				exchange.close();
+				if (method.isAnnotationPresent(GetRequest.class)) {
+					String template = (String) method.invoke(controller); // execute the method using reflection
+					String html = getTemplateHtml(template);
+					exchange.sendResponseHeaders(200, html.length());
+					exchange.getResponseBody().write(html.getBytes());
+					exchange.close();
+				} else if (method.isAnnotationPresent(PostRequest.class)) {
+				    String requestBody = new String(exchange.getRequestBody().readAllBytes());
+				    
+				    if (!validHeaders(exchange.getRequestHeaders())) {
+				    	String errorMsg = "Invalid headers received. Review 'Content-Type' and 'Accept' headers";
+					    exchange.sendResponseHeaders(400, errorMsg.length());
+					    exchange.getResponseBody().write(errorMsg.getBytes());
+					    exchange.close();
+					    return;
+				    }
+
+				    ImperatorResponse<?> response;
+				    if (method.getParameterCount() == 1) {
+				        response = (ImperatorResponse<?>) method.invoke(controller, requestBody);
+				    } else {
+				        response = (ImperatorResponse<?>) method.invoke(controller);
+				    }
+
+				    String json = response.toString();
+
+				    exchange.sendResponseHeaders(response.getResponseCode(), json.length());
+				    exchange.getResponseBody().write(json.getBytes());
+				    exchange.close();
+				} else {
+					logger.error("Unexpected method declared. Review the annotations of method {}", method.getName());
+				}
 			} catch (Exception e) {
 				logger.error("Error executing method {}", method.getName(), e);
 			}
 		});
+	}
+	
+	private boolean validHeaders(Headers headers) {
+		boolean valid = true;
+	
+		if (!headers.containsKey(Constants.HEADER_CONTENT_TYPE) || !headers.containsKey(Constants.HEADER_ACCEPT))
+			valid = false;
+		if (!Constants.APPLICATION_JSON.equals(headers.getFirst(Constants.HEADER_CONTENT_TYPE))
+				|| !Constants.APPLICATION_JSON.equals(headers.getFirst(Constants.HEADER_ACCEPT)))
+			valid = false;
+		
+		return valid;
 	}
 	
 	private String getTemplateHtml(String template) {
