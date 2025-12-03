@@ -3,6 +3,8 @@ package com.techhispania.imperator.core;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 
 import org.reflections.Reflections;
@@ -12,9 +14,14 @@ import com.sun.net.httpserver.HttpServer;
 import com.techhispania.imperator.common.annotations.Controller;
 import com.techhispania.imperator.common.annotations.GetRequest;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.Resource;
+import io.github.classgraph.ScanResult;
+
 public class Loader {
 
 	private static final String INIT_PACKAGE = "com.techhispania.imperator";
+	private static final String TEMPLATES_PATH = "templates";
 	
 	private static final int PORT = 8080;
 		
@@ -52,18 +59,45 @@ public class Loader {
 	private void allowEndpoint(HttpServer httpServer, String endpoint, Class<?> classObject, Method method) {
 		httpServer.createContext(endpoint, exchange -> {
 			System.out.println("Request received on endpoint: " + endpoint);
-			method.setAccessible(true);
+			method.setAccessible(true); // needed to be able to execute a method using reflection
 			try {
 				Object controller = classObject.getDeclaredConstructor().newInstance();
 				
-				String output = (String) method.invoke(controller);
-				exchange.sendResponseHeaders(200, output.length());
-				exchange.getResponseBody().write(output.getBytes());
+				String template = (String) method.invoke(controller); // execute the method using reflection
+				String html = getTemplateHtml(template);
+				exchange.sendResponseHeaders(200, html.length());
+				exchange.getResponseBody().write(html.getBytes());
 				exchange.close();
 			} catch (Exception e) {
 				System.out.println("Error executing method " + method.getName());
 				e.printStackTrace();
 			}
 		});
+	}
+	
+	private String getTemplateHtml(String template) {
+		try (ScanResult scanResult = new ClassGraph().acceptPaths(TEMPLATES_PATH).scan()) {
+			List<String> templateFiles = scanResult.getAllResources().getPaths();
+			
+			for (String f : templateFiles) {
+				String templateFileName = f.substring(TEMPLATES_PATH.length() + 1);
+				System.out.println("Template: " + templateFileName);
+				
+				if (templateFileName.equalsIgnoreCase(template + ".html")) {
+					System.out.println("Template is present");
+					
+					Resource resource = scanResult.getResourcesWithPath(f).get(0); 
+					
+					try {
+						return new String(resource.load(), StandardCharsets.UTF_8);
+					} catch (IOException e) {
+						System.out.println("Error reading content from template");
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+		System.out.println("Template not found");
+		return template;
 	}
 }
