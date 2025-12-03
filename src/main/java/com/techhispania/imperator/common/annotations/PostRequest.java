@@ -6,10 +6,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to identify Controller classes
+ * Annotation to mark methods that represents a 
+ * POST http request
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface Controller {
-
+@Target(ElementType.METHOD)
+public @interface PostRequest {
+	public String value() default "/";
 }

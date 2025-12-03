@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -15,6 +16,7 @@ import com.sun.net.httpserver.HttpServer;
 
 import com.techhispania.imperator.common.annotations.Controller;
 import com.techhispania.imperator.common.annotations.GetRequest;
+import com.techhispania.imperator.common.annotations.PostRequest;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.Resource;
@@ -28,7 +30,7 @@ public class LoaderImpl implements Loader {
 	private static final String TEMPLATES_PATH = "templates";
 	
 	private static final int PORT = 8080;
-		
+
 	public void run() throws IOException {
 		logger.debug("Loading server controllers");
 		
@@ -40,27 +42,53 @@ public class LoaderImpl implements Loader {
 		
 		controllers.forEach(c -> {
 			logger.debug("Loading endpoints declared in controller: " + c.getName());
-			
-			processEndpoints(httpServer, c);
+			loadEndpoints(httpServer, c);
 		});
 		httpServer.start();
 		logger.info("Server running on port: " + PORT);
 	}
 	
-	private void processEndpoints(HttpServer httpServer, Class<?> classObject) {
+	private void loadEndpoints(HttpServer httpServer, Class<?> classObject) {
 		Method[] methods = classObject.getDeclaredMethods();
 		for (Method method : methods) {
-			if (method.isAnnotationPresent(GetRequest.class)) {
-				GetRequest annotation = method.getAnnotation(GetRequest.class);
-				String endpoint = annotation.value();
-				logger.debug("Processing Get Request '" + endpoint + "' in method '" + method.getName());
-									
-				allowEndpoint(httpServer, endpoint, classObject, method);
-			}
+			
+			Optional<String> endpoint = retrieveEndpointDeclaredInMethod(method);
+			
+			if (endpoint.isEmpty())
+				continue;
+								
+			runEndpoint(httpServer, endpoint.get(), classObject, method);
 		}
 	}
 	
-	private void allowEndpoint(HttpServer httpServer, String endpoint, Class<?> classObject, Method method) {
+	private Optional<String> retrieveEndpointDeclaredInMethod(Method method) {
+		Optional<String> endpoint = retrieveGetRequestsEndpoint(method);
+		
+		if (endpoint.isPresent())
+			return endpoint;
+		
+		return retrievePostRequestsEndpoint(method);
+	}
+	
+	private Optional<String> retrieveGetRequestsEndpoint(Method method) {
+		if (!method.isAnnotationPresent(GetRequest.class))
+			return Optional.empty();
+		
+		GetRequest annotation = method.getAnnotation(GetRequest.class);
+		logger.debug("Loading GET Request '" + annotation.value() + "' in method '" + method.getName());
+		return Optional.of(annotation.value());
+	}
+	
+	private Optional<String> retrievePostRequestsEndpoint(Method method) {
+		if (!method.isAnnotationPresent(PostRequest.class))
+			return Optional.empty();
+		
+		PostRequest annotation = method.getAnnotation(PostRequest.class);
+		logger.debug("Loading POST Request '" + annotation.value() + "' in method '" + method.getName());
+		return Optional.of(annotation.value());
+	}
+	
+	private void runEndpoint(HttpServer httpServer, String endpoint, Class<?> classObject, Method method) {
 		httpServer.createContext(endpoint, exchange -> {
 			logger.debug("Request received on endpoint: " + endpoint);
 			method.setAccessible(true); // needed to be able to execute a method using reflection
