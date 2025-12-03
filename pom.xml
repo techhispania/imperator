@@ -5,6 +5,13 @@
   <version>0.0.1-SNAPSHOT</version>
   <name>imperator</name>
   <description>Microservices orchestrator</description>
+  <dependencies>
+	<dependency>
+	    <groupId>org.reflections</groupId>
+	    <artifactId>reflections</artifactId>
+	    <version>0.10.2</version>
+	</dependency>
+  </dependencies>
   <build>
     <plugins>
       <plugin>
