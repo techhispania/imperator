@@ -40,7 +40,7 @@ jobs:
     - name: Wait for server to start
       run: |
         for i in {1..30}; do
-          if wget -qO- http://localhost:8080/ > /dev/null; then
+          if wget -qO- http://localhost:8080/health > /dev/null; then
             echo "Server is UP!"
             exit 0
           fi
@@ -53,9 +53,9 @@ jobs:
 
     - name: Check Server Health Response
       run: |
-        RESPONSE=$(wget -qO- http://localhost:8080/)
+        RESPONSE=$(wget -qO- http://localhost:8080/health)
         echo "Response: $RESPONSE"
-        if [[ "$RESPONSE" != "<h1>Test page</h1>" ]]; then
+        if [[ "$RESPONSE" != "<h1>Health Page</h1>" ]]; then
           echo "Unexpected server response"
           exit 1
         fi
