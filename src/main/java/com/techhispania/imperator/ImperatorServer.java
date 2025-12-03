@@ -1,26 +1,19 @@
 package com.techhispania.imperator;
 
-import java.net.InetSocketAddress;
-import com.sun.net.httpserver.HttpServer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.techhispania.imperator.core.factories.CoreFactory;
+import com.techhispania.imperator.core.loader.Loader;
 
 public class ImperatorServer {
 
-	private static final int PORT = 8080;
+	private static final Logger logger = LogManager.getLogger(ImperatorServer.class);
 	
 	public static void main(String[] args) throws Exception {
+		logger.info("Initializing server...");
 		
-		System.out.println("Initializing server...");
-		HttpServer httpServer = HttpServer.create(new InetSocketAddress(PORT), 0);
-		System.out.println("Server running on port " + PORT);
-		
-		httpServer.createContext("/", exchange -> {
-			System.out.println("Request received");
-			String html = "<h1>Test page</h1>";
-			exchange.sendResponseHeaders(200, html.length());
-			exchange.getResponseBody().write(html.getBytes());
-			exchange.close();
-		});
-		
-		httpServer.start();
+		Loader loader = CoreFactory.createLoader();
+		loader.run();		
 	}
 }
