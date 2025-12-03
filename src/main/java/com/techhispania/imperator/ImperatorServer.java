@@ -1,13 +1,19 @@
 package com.techhispania.imperator;
 
-import com.techhispania.imperator.core.Loader;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.techhispania.imperator.core.factories.CoreFactory;
+import com.techhispania.imperator.core.loader.Loader;
 
 public class ImperatorServer {
 
+	private static final Logger logger = LogManager.getLogger(ImperatorServer.class);
+	
 	public static void main(String[] args) throws Exception {
-		System.out.println("Initializing server...");
+		logger.info("Initializing server...");
 		
-		Loader loader = new Loader();
+		Loader loader = CoreFactory.createLoader();
 		loader.run();		
 	}
 }
