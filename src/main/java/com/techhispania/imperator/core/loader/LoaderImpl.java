@@ -21,6 +21,7 @@ import com.techhispania.imperator.common.annotations.GetRequest;
 import com.techhispania.imperator.common.annotations.PostRequest;
 import com.techhispania.imperator.common.annotations.RequestBody;
 import com.techhispania.imperator.common.utils.Constants;
+import com.techhispania.imperator.core.handlers.StaticFileHandler;
 import com.techhispania.imperator.core.http.dto.ImperatorResponse;
 
 import io.github.classgraph.ClassGraph;
@@ -45,6 +46,8 @@ public class LoaderImpl implements Loader {
 		Set<Class<?>> controllers = reflections.getTypesAnnotatedWith(Controller.class);
 		
 		HttpServer httpServer = HttpServer.create(new InetSocketAddress(PORT), 0);
+		
+		httpServer.createContext("/static", new StaticFileHandler());
 		
 		controllers.forEach(c -> {
 			logger.debug("Loading endpoints declared in controller: " + c.getName());
