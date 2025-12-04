@@ -1,6 +1,7 @@
 package com.techhispania.imperator.core.handlers;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -18,5 +19,23 @@ public interface HandleUpload {
 	 */
 	Optional<String> handleUpload(HttpExchange exchange, byte[] bodyBytes) throws IOException;
 	
+	/**
+	 * This method retrieve the web form parameters received in the 
+	 * POST requests with multipart/form-data Content-Type.
+	 * 
+	 * @param body The string that contains the full body request received
+	 * @param boundary The boundary used to split the body in different parts
+	 * @return Map that contains all the parameters retrieved
+	 */
+	Map<String, String> parseMultipartFormFields(String body, String boundary);
+	
+	/**
+	 * Retrieve the "boundary" from Content-Type header.
+	 * This boundary is used as delimiter in the body to identify
+	 * the headers, body and other data inside the request body
+	 * 
+	 * @param exchange The HttpExchange of the request
+	 * @return The boundary found. Empty if no boundary found
+	 */
 	Optional<String> retrieveBoundary(HttpExchange exchange);
 }

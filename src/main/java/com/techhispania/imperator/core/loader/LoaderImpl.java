@@ -5,13 +5,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +34,8 @@ import io.github.classgraph.ScanResult;
 import tools.jackson.databind.ObjectMapper;
 
 public class LoaderImpl implements Loader {
+
+	private static final String CLASS_STRING = "java.lang.String";
 
 	private static final Logger logger = LogManager.getLogger(LoaderImpl.class);
 	
@@ -112,20 +111,19 @@ public class LoaderImpl implements Loader {
 				Object controller = classObject.getDeclaredConstructor().newInstance();
 				
 				if (method.isAnnotationPresent(GetRequest.class)) {
+					logger.debug("Processing GET request in method {}", method.getName());
 					executeGetMethod(exchange, method, controller);
 				} else if (method.isAnnotationPresent(PostRequest.class)) {
 				    logger.debug("Processing POST request in method {}", method.getName());
 				    if (!validHeaders(exchange.getRequestHeaders())) {
 				    	logger.error("Invalid headers received. {}", exchange.getRequestHeaders());
 				    	String errorMsg = "Invalid headers received. Review 'Content-Type' and 'Accept' headers";
-					    exchange.sendResponseHeaders(400, errorMsg.length());
-					    exchange.getResponseBody().write(errorMsg.getBytes());
-					    exchange.close();
+				    	sendHttpResponse(exchange, 400, errorMsg);
 					    return;
 				    }
 				    
 				    if (isMultipartFormData(exchange.getRequestHeaders())) {
-				    	logger.debug("Received a file in the request");
+				    	logger.debug("Upload File request");
 						byte[] bodyBytes = exchange.getRequestBody().readAllBytes();
 				    	
 				    	HandleUpload handleUpload = CoreFactory.createHandleUpload();
@@ -135,7 +133,7 @@ public class LoaderImpl implements Loader {
 				    	Class<?> requestBodyType = getRequestBodyType(method);
 				    	
 				    	String body = new String(bodyBytes);
-				    	Map<String, String> formParams = parseMultipartFormFields(body, handleUpload.retrieveBoundary(exchange).get());
+				    	Map<String, String> formParams = handleUpload.parseMultipartFormFields(body, handleUpload.retrieveBoundary(exchange).get());
 				    	logger.debug("Form params received: {}", formParams);
 				    	formParams.put("filename", filename.get());
 
@@ -143,6 +141,7 @@ public class LoaderImpl implements Loader {
 					    Object requestObject = mapper.convertValue(formParams, requestBodyType);
 				    	executePostMethod(exchange, method, controller, requestObject);
 				    } else {
+				    	logger.debug("REST request");
 				    	String requestBody = new String(exchange.getRequestBody().readAllBytes());
 				    	
 					    Class<?> requestBodyType = getRequestBodyType(method);
@@ -161,75 +160,52 @@ public class LoaderImpl implements Loader {
 		});
 	}
 	
-	private Map<String, String> parseMultipartFormFields(String body, String boundary) {
-	    Map<String, String> fields = new HashMap<>();
-
-	    // split by boundary
-	    String[] parts = body.split(Pattern.quote(boundary));
-
-	    for (String part : parts) {
-	        part = part.trim();
-	        if (part.isEmpty()) continue;
-
-	        // find header/content separator
-	        int sep = part.indexOf("\r\n\r\n");
-	        if (sep < 0) continue;
-
-	        String headers = part.substring(0, sep).trim();
-	        String content = part.substring(sep + 4).trim(); // remove CRLF
-
-	        // extract name="..."
-	        Matcher m = Pattern.compile("name=\"([^\"]+)\"").matcher(headers);
-	        if (!m.find()) continue;
-
-	        String fieldName = m.group(1);
-
-	        // ignore file uploads (they contain filename="...")
-	        if (headers.contains("filename=")) continue;
-
-	        fields.put(fieldName, content);
-	    }
-	    return fields;
-	}
-
-	
 	private void executeGetMethod(HttpExchange exchange, Method method, Object controller) throws Exception {
 		String template = (String) method.invoke(controller); // execute the method using reflection
 		String html = getTemplateHtml(template);
-		exchange.sendResponseHeaders(200, html.length());
-		exchange.getResponseBody().write(html.getBytes());
-		exchange.close();
+		sendHttpResponse(exchange, 200, html);
 	}
 	
 	private void executePostMethod(HttpExchange exchange, Method method, Object controller, Object requestObject) throws Exception {
 		
 		Class<?> returnType = method.getReturnType();
 		
-		// If the method returns a template, execute it like a GET request
-		// because that means, that is a POST request from a WEB FORM, and 
-		// it has to be redirected to another web page
-		if (returnType.getTypeName().equals("java.lang.String")) {
+		// If the method returns an String that means that we have to redirect the user
+		// in any other case, we consider that it's a REST API POST request
+		if (CLASS_STRING.equals(returnType.getTypeName())) {
 			String redirectPath = (String) method.invoke(controller, requestObject); // execute the method using reflection
 
-			exchange.getResponseHeaders().add("Location", redirectPath);
-			exchange.sendResponseHeaders(303, -1); // 303 redirect, no response body
-			exchange.close();
+			redirect(exchange, redirectPath);
 			return;
 		}
 		
-		// In any other case, execute as a REST API POST request
 	    ImperatorResponse<?> response;
 	    if (method.getParameterCount() == 1) {
 	        response = (ImperatorResponse<?>) method.invoke(controller, requestObject); // execute the method using reflection
 	    } else {
 	        response = (ImperatorResponse<?>) method.invoke(controller); // execute the method using reflection
 	    }
-
-	    String json = response.toString();
-
-	    exchange.sendResponseHeaders(response.getResponseCode(), json.length());
-	    exchange.getResponseBody().write(json.getBytes());
-	    exchange.close();
+	    sendHttpResponse(exchange, response.getResponseCode(), response.toString());
+	}
+	
+	private void redirect(HttpExchange exchange, String redirectPath) {
+		try {
+			exchange.getResponseHeaders().add("Location", redirectPath);
+			exchange.sendResponseHeaders(303, -1); // 303 redirect, no response body
+			exchange.close();
+		} catch (IOException e) {
+			logger.error("Error redirecting to '{}'", redirectPath, e);
+		}
+	}
+	
+	private void sendHttpResponse(HttpExchange exchange, int responseCode, String responseContent) {
+		try {
+		    exchange.sendResponseHeaders(responseCode, responseContent.length());
+		    exchange.getResponseBody().write(responseContent.getBytes());
+		    exchange.close();
+		} catch (IOException e) {
+			logger.error("Error sending response.", e);
+		}
 	}
 	
 	/*
