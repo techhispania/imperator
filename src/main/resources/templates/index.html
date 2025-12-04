@@ -20,6 +20,16 @@
 				<form action="/deploy" method="POST" enctype="multipart/form-data" class="card p-4 shadow-sm bg-white">
 					<fieldset>
 						<legend class="h5 mb-3">Upload Your File</legend>
+						
+						<div class="mb-3">
+							<label for="serviceName" class="form-label">Service Name</label> 
+							<input type="text" id="serviceName" name="serviceName" class="form-control" required>
+						</div>
+
+						<div class="mb-3">
+							<label for="description" class="form-label">Description</label> 
+							<input type="text" id="description" name="description" class="form-control" required>
+						</div>
 
 						<div class="mb-3">
 							<label for="fileInput" class="form-label">Choose a file</label> 

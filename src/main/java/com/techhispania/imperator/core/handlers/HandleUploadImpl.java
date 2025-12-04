@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,7 +26,22 @@ public class HandleUploadImpl implements HandleUpload {
 	
 	private static final String DESTINATION_FOLDER = "../deployed";
 
-	public void handleUpload(HttpExchange exchange) throws IOException {
+	@Override
+	public Optional<String> retrieveBoundary(HttpExchange exchange) {
+		String contentType = exchange.getRequestHeaders().getFirst("Content-type");
+
+		// The "boundary" present in the "Content-Type" header, is used to split the
+		// body in different parts (headers part, content part)
+		String rawBoundary = contentType.split("boundary=")[1];
+		byte[] boundaryBytes = ("--" + rawBoundary).getBytes(StandardCharsets.ISO_8859_1);
+		
+		String boundary = new String(boundaryBytes);
+		logger.debug("Boundary: {}", boundary);
+		
+		return Optional.of(boundary);
+	}
+	
+	public Optional<String> handleUpload(HttpExchange exchange, byte[] bodyBytes) throws IOException {
 		String contentType = exchange.getRequestHeaders().getFirst("Content-type");
 
 		// The "boundary" present in the "Content-Type" header, is used to split the
@@ -33,7 +49,6 @@ public class HandleUploadImpl implements HandleUpload {
 		String rawBoundary = contentType.split("boundary=")[1];
 		byte[] boundaryBytes = ("--" + rawBoundary).getBytes(StandardCharsets.ISO_8859_1);
 		logger.debug("Boundary: {}", new String(boundaryBytes));
-		byte[] bodyBytes = exchange.getRequestBody().readAllBytes();
 
 		int pos = 0;
 		while (pos < bodyBytes.length) {
@@ -71,13 +86,15 @@ public class HandleUploadImpl implements HandleUpload {
 					try (FileOutputStream fos = new FileOutputStream(outFile)) {
 						fos.write(fileBytes);
 					}
+					return Optional.of(filename);
 				}
 			}
 			pos = nextBoundary;
 		}
-		exchange.sendResponseHeaders(200, 0);
-		exchange.getResponseBody().write("Upload complete".getBytes());
-		exchange.getResponseBody().close();
+//		exchange.sendResponseHeaders(200, 0);
+//		exchange.getResponseBody().write("Upload complete".getBytes());
+//		exchange.getResponseBody().close();
+		return Optional.empty();
 	}
 
 	// Helper method to find byte array in another byte array

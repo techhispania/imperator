@@ -5,15 +5,20 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reflections.Reflections;
 
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.Headers;
 
 import com.techhispania.imperator.common.annotations.Controller;
@@ -107,11 +112,7 @@ public class LoaderImpl implements Loader {
 				Object controller = classObject.getDeclaredConstructor().newInstance();
 				
 				if (method.isAnnotationPresent(GetRequest.class)) {
-					String template = (String) method.invoke(controller); // execute the method using reflection
-					String html = getTemplateHtml(template);
-					exchange.sendResponseHeaders(200, html.length());
-					exchange.getResponseBody().write(html.getBytes());
-					exchange.close();
+					executeGetMethod(exchange, method, controller);
 				} else if (method.isAnnotationPresent(PostRequest.class)) {
 				    logger.debug("Processing POST request in method {}", method.getName());
 				    if (!validHeaders(exchange.getRequestHeaders())) {
@@ -125,29 +126,32 @@ public class LoaderImpl implements Loader {
 				    
 				    if (isMultipartFormData(exchange.getRequestHeaders())) {
 				    	logger.debug("Received a file in the request");
+						byte[] bodyBytes = exchange.getRequestBody().readAllBytes();
+				    	
 				    	HandleUpload handleUpload = CoreFactory.createHandleUpload();
-				    	handleUpload.handleUpload(exchange);
+				    	Optional<String> filename = handleUpload.handleUpload(exchange, bodyBytes);
+				    	logger.debug("File uploaded: {}", filename);
+				    	
+				    	Class<?> requestBodyType = getRequestBodyType(method);
+				    	
+				    	String body = new String(bodyBytes);
+				    	Map<String, String> formParams = parseMultipartFormFields(body, handleUpload.retrieveBoundary(exchange).get());
+				    	logger.debug("Form params received: {}", formParams);
+				    	formParams.put("filename", filename.get());
+
+				    	ObjectMapper mapper = new ObjectMapper();
+					    Object requestObject = mapper.convertValue(formParams, requestBodyType);
+				    	executePostMethod(exchange, method, controller, requestObject);
 				    } else {
 				    	String requestBody = new String(exchange.getRequestBody().readAllBytes());
 				    	
 					    Class<?> requestBodyType = getRequestBodyType(method);
 					    
 					    ObjectMapper mapper = new ObjectMapper();
-					    Object requestObject = mapper.readValue(requestBody, requestBodyType);				    
+					    Object requestObject = mapper.readValue(requestBody, requestBodyType);
 					    
-					    ImperatorResponse<?> response;
-					    if (method.getParameterCount() == 1) {
-					        response = (ImperatorResponse<?>) method.invoke(controller, requestObject); // execute the method using reflection
-					    } else {
-					        response = (ImperatorResponse<?>) method.invoke(controller); // execute the method using reflection
-					    }
-
-					    String json = response.toString();
-
-					    exchange.sendResponseHeaders(response.getResponseCode(), json.length());
-					    exchange.getResponseBody().write(json.getBytes());
-					    exchange.close();	
-				    }				    
+					    executePostMethod(exchange, method, controller, requestObject);
+				    }
 				} else {
 					logger.error("Unexpected method declared. Review the annotations of method {}", method.getName());
 				}
@@ -155,6 +159,77 @@ public class LoaderImpl implements Loader {
 				logger.error("Error executing method {}", method.getName(), e);
 			}
 		});
+	}
+	
+	private Map<String, String> parseMultipartFormFields(String body, String boundary) {
+	    Map<String, String> fields = new HashMap<>();
+
+	    // split by boundary
+	    String[] parts = body.split(Pattern.quote(boundary));
+
+	    for (String part : parts) {
+	        part = part.trim();
+	        if (part.isEmpty()) continue;
+
+	        // find header/content separator
+	        int sep = part.indexOf("\r\n\r\n");
+	        if (sep < 0) continue;
+
+	        String headers = part.substring(0, sep).trim();
+	        String content = part.substring(sep + 4).trim(); // remove CRLF
+
+	        // extract name="..."
+	        Matcher m = Pattern.compile("name=\"([^\"]+)\"").matcher(headers);
+	        if (!m.find()) continue;
+
+	        String fieldName = m.group(1);
+
+	        // ignore file uploads (they contain filename="...")
+	        if (headers.contains("filename=")) continue;
+
+	        fields.put(fieldName, content);
+	    }
+	    return fields;
+	}
+
+	
+	private void executeGetMethod(HttpExchange exchange, Method method, Object controller) throws Exception {
+		String template = (String) method.invoke(controller); // execute the method using reflection
+		String html = getTemplateHtml(template);
+		exchange.sendResponseHeaders(200, html.length());
+		exchange.getResponseBody().write(html.getBytes());
+		exchange.close();
+	}
+	
+	private void executePostMethod(HttpExchange exchange, Method method, Object controller, Object requestObject) throws Exception {
+		
+		Class<?> returnType = method.getReturnType();
+		
+		// If the method returns a template, execute it like a GET request
+		// because that means, that is a POST request from a WEB FORM, and 
+		// it has to be redirected to another web page
+		if (returnType.getTypeName().equals("java.lang.String")) {
+			String redirectPath = (String) method.invoke(controller, requestObject); // execute the method using reflection
+
+			exchange.getResponseHeaders().add("Location", redirectPath);
+			exchange.sendResponseHeaders(303, -1); // 303 redirect, no response body
+			exchange.close();
+			return;
+		}
+		
+		// In any other case, execute as a REST API POST request
+	    ImperatorResponse<?> response;
+	    if (method.getParameterCount() == 1) {
+	        response = (ImperatorResponse<?>) method.invoke(controller, requestObject); // execute the method using reflection
+	    } else {
+	        response = (ImperatorResponse<?>) method.invoke(controller); // execute the method using reflection
+	    }
+
+	    String json = response.toString();
+
+	    exchange.sendResponseHeaders(response.getResponseCode(), json.length());
+	    exchange.getResponseBody().write(json.getBytes());
+	    exchange.close();
 	}
 	
 	/*

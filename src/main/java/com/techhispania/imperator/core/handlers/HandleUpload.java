@@ -1,6 +1,7 @@
 package com.techhispania.imperator.core.handlers;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import com.sun.net.httpserver.HttpExchange;
 
@@ -11,7 +12,11 @@ public interface HandleUpload {
 	 * directory of the imperator server
 	 * 
 	 * @param exchange The HttpServer exchange where the request is received
+	 * @param bodyBytes The body received in the request
+	 * @return The name of the file uploaded. Empty if no file was uploaded
 	 * @throws IOException
 	 */
-	void handleUpload(HttpExchange exchange) throws IOException;
+	Optional<String> handleUpload(HttpExchange exchange, byte[] bodyBytes) throws IOException;
+	
+	Optional<String> retrieveBoundary(HttpExchange exchange);
 }

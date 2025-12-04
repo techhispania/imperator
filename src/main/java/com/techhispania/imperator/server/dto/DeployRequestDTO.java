@@ -1,5 +1,5 @@
 package com.techhispania.imperator.server.dto;
 
-public record DeployRequestDTO (String file){
+public record DeployRequestDTO (String filename, String serviceName, String description){
 
 }

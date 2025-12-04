@@ -31,12 +31,14 @@ public class ServerController {
 	}
 	
 	@PostRequest("/deploy")
-	public ImperatorResponse<DeployResponseDTO> deploy(@RequestBody DeployRequestDTO request) {
+	public String deploy(@RequestBody DeployRequestDTO request) {
+	//public ImperatorResponse<DeployResponseDTO> deploy(@RequestBody DeployRequestDTO request) {
 		logger.debug("Deploy service: {}", request);
 		
-		DeployResponseDTO response = new DeployResponseDTO("Service deployed");
+		//DeployResponseDTO response = new DeployResponseDTO("Service deployed");
 		
-		return new ImperatorResponse<DeployResponseDTO>(200, response);
+		//return new ImperatorResponse<DeployResponseDTO>(200, response);
+		return "/";
 	}	
 }
 
