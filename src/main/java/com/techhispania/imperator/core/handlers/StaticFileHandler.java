@@ -1,36 +1,38 @@
 package com.techhispania.imperator.core.handlers;
 
 import com.sun.net.httpserver.HttpHandler;
+import com.techhispania.imperator.common.utils.Constants;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.sun.net.httpserver.HttpExchange;
 
 public class StaticFileHandler implements HttpHandler {
 
+	private static final Logger logger = LogManager.getLogger(StaticFileHandler.class);
+	
 	@Override
 	public void handle(HttpExchange exchange) throws IOException {
 		String requestPath = exchange.getRequestURI().getPath();
 
-		// Convert "/static/css/styles.css" into "/static/css/styles.css"
-		String resourcePath = requestPath;
-
-		// Resources in classpath don't start with "/", so remove it
-		if (resourcePath.startsWith("/")) {
-			resourcePath = resourcePath.substring(1);
+		if (requestPath.startsWith("/")) {
+			requestPath = requestPath.substring(1);
 		}
 
-		InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
+		InputStream resourceStream = getClass().getClassLoader().getResourceAsStream(requestPath);
 		if (resourceStream == null) {
+			logger.error("Resource not found: {}", requestPath);
 			exchange.sendResponseHeaders(404, -1);
 			return;
 		}
 
-		// Determine MIME type
-		String contentType = guessMimeType(resourcePath);
-		exchange.getResponseHeaders().add("Content-Type", contentType);
+		String contentType = guessMimeType(requestPath);
+		exchange.getResponseHeaders().add(Constants.HEADER_CONTENT_TYPE, contentType);
 
 		byte[] bytes = resourceStream.readAllBytes();
 		exchange.sendResponseHeaders(200, bytes.length);
