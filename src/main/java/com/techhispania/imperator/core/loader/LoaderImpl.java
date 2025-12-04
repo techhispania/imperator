@@ -21,6 +21,8 @@ import com.techhispania.imperator.common.annotations.GetRequest;
 import com.techhispania.imperator.common.annotations.PostRequest;
 import com.techhispania.imperator.common.annotations.RequestBody;
 import com.techhispania.imperator.common.utils.Constants;
+import com.techhispania.imperator.core.factories.CoreFactory;
+import com.techhispania.imperator.core.handlers.HandleUpload;
 import com.techhispania.imperator.core.handlers.StaticFileHandler;
 import com.techhispania.imperator.core.http.dto.ImperatorResponse;
 
@@ -111,33 +113,41 @@ public class LoaderImpl implements Loader {
 					exchange.getResponseBody().write(html.getBytes());
 					exchange.close();
 				} else if (method.isAnnotationPresent(PostRequest.class)) {
-				    
+				    logger.debug("Processing POST request in method {}", method.getName());
 				    if (!validHeaders(exchange.getRequestHeaders())) {
+				    	logger.error("Invalid headers received. {}", exchange.getRequestHeaders());
 				    	String errorMsg = "Invalid headers received. Review 'Content-Type' and 'Accept' headers";
 					    exchange.sendResponseHeaders(400, errorMsg.length());
 					    exchange.getResponseBody().write(errorMsg.getBytes());
 					    exchange.close();
 					    return;
 				    }
-				    String requestBody = new String(exchange.getRequestBody().readAllBytes());
-
-				    Class<?> requestBodyType = getRequestBodyType(method);
 				    
-				    ObjectMapper mapper = new ObjectMapper();
-				    Object requestObject = mapper.readValue(requestBody, requestBodyType);				    
-				    
-				    ImperatorResponse<?> response;
-				    if (method.getParameterCount() == 1) {
-				        response = (ImperatorResponse<?>) method.invoke(controller, requestObject); // execute the method using reflection
+				    if (isMultipartFormData(exchange.getRequestHeaders())) {
+				    	logger.debug("Received a file in the request");
+				    	HandleUpload handleUpload = CoreFactory.createHandleUpload();
+				    	handleUpload.handleUpload(exchange);
 				    } else {
-				        response = (ImperatorResponse<?>) method.invoke(controller); // execute the method using reflection
-				    }
+				    	String requestBody = new String(exchange.getRequestBody().readAllBytes());
+				    	
+					    Class<?> requestBodyType = getRequestBodyType(method);
+					    
+					    ObjectMapper mapper = new ObjectMapper();
+					    Object requestObject = mapper.readValue(requestBody, requestBodyType);				    
+					    
+					    ImperatorResponse<?> response;
+					    if (method.getParameterCount() == 1) {
+					        response = (ImperatorResponse<?>) method.invoke(controller, requestObject); // execute the method using reflection
+					    } else {
+					        response = (ImperatorResponse<?>) method.invoke(controller); // execute the method using reflection
+					    }
 
-				    String json = response.toString();
+					    String json = response.toString();
 
-				    exchange.sendResponseHeaders(response.getResponseCode(), json.length());
-				    exchange.getResponseBody().write(json.getBytes());
-				    exchange.close();
+					    exchange.sendResponseHeaders(response.getResponseCode(), json.length());
+					    exchange.getResponseBody().write(json.getBytes());
+					    exchange.close();	
+				    }				    
 				} else {
 					logger.error("Unexpected method declared. Review the annotations of method {}", method.getName());
 				}
@@ -164,14 +174,27 @@ public class LoaderImpl implements Loader {
 	
 	private boolean validHeaders(Headers headers) {
 		boolean valid = true;
-	
-		if (!headers.containsKey(Constants.HEADER_CONTENT_TYPE) || !headers.containsKey(Constants.HEADER_ACCEPT))
+		
+		if (!headers.containsKey(Constants.HEADER_CONTENT_TYPE) || !headers.containsKey(Constants.HEADER_ACCEPT)) {
 			valid = false;
-		if (!Constants.APPLICATION_JSON.equals(headers.getFirst(Constants.HEADER_CONTENT_TYPE))
-				|| !Constants.APPLICATION_JSON.equals(headers.getFirst(Constants.HEADER_ACCEPT)))
+		}
+		
+		if (!headers.getFirst(Constants.HEADER_CONTENT_TYPE).contains(Constants.APPLICATION_JSON)
+				&& !headers.getFirst(Constants.HEADER_CONTENT_TYPE).contains(Constants.MULTIPART_FORM_DATA)) {
 			valid = false;
+		}
+		
+		if (!headers.getFirst(Constants.HEADER_ACCEPT).contains(Constants.APPLICATION_JSON)
+				&& !headers.getFirst(Constants.HEADER_ACCEPT).contains(Constants.TEXT_HTML)
+				&& !headers.getFirst(Constants.HEADER_ACCEPT).contains(Constants.APPLICATION_XHTML_XML)) {
+			valid = false;	
+		}
 		
 		return valid;
+	}
+	
+	private boolean isMultipartFormData(Headers headers) {
+		return headers.getFirst(Constants.HEADER_CONTENT_TYPE).contains(Constants.MULTIPART_FORM_DATA);
 	}
 	
 	private String getTemplateHtml(String template) {
