@@ -41,6 +41,28 @@
 				</form>
 			</article>
 		</section>
+		
+		<section class="row justify-content-center">
+			<article class="col-12 col-md-6">
+				<form action="/deploy" method="POST" class="card p-4 shadow-sm bg-white">
+					<fieldset>
+						<legend class="h5 mb-3">Test Form</legend>
+						
+						<div class="mb-3">
+							<label for="serviceName" class="form-label">Service Name</label> 
+							<input type="text" id="serviceName" name="serviceName" class="form-control" required>
+						</div>
+
+						<div class="mb-3">
+							<label for="description" class="form-label">Description</label> 
+							<input type="text" id="description" name="description" class="form-control" required>
+						</div>
+
+						<button type="submit" class="btn btn-primary w-100">Send</button>
+					</fieldset>
+				</form>
+			</article>
+		</section>
 	</main>
 </body>
 </html>
