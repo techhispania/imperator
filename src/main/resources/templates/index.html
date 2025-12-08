@@ -1,10 +1,68 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
 	<title>Imperator Admin Panel</title>
 	<link rel="stylesheet" href="/static/css/styles.css">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-<h1>Admin Panel</h1>
-<p>Welcome to the Admin Panel of Imperator Server</p>
+<body class="bg-light">
+	<header class="container py-5 text-center">
+		<h1>Imperator Admin Panel</h1>
+		<p class="lead">Welcome to the Admin Panel of Imperator Server. Select your microservices to deploy</p>
+	</header>
+
+	<main class="container">
+		<section class="row justify-content-center">
+			<article class="col-12 col-md-6">
+				<form action="/deploy" method="POST" enctype="multipart/form-data" class="card p-4 shadow-sm bg-white">
+					<fieldset>
+						<legend class="h5 mb-3">Upload Your File</legend>
+						
+						<div class="mb-3">
+							<label for="serviceName" class="form-label">Service Name</label> 
+							<input type="text" id="serviceName" name="serviceName" class="form-control" required>
+						</div>
+
+						<div class="mb-3">
+							<label for="description" class="form-label">Description</label> 
+							<input type="text" id="description" name="description" class="form-control" required>
+						</div>
+
+						<div class="mb-3">
+							<label for="fileInput" class="form-label">Choose a file</label> 
+							<input type="file" id="fileInput" name="file" class="form-control" required>
+						</div>
+
+						<button type="submit" class="btn btn-primary w-100">Deploy</button>
+					</fieldset>
+				</form>
+			</article>
+		</section>
+		
+		<section class="row justify-content-center">
+			<article class="col-12 col-md-6">
+				<form action="/deploy" method="POST" class="card p-4 shadow-sm bg-white">
+					<fieldset>
+						<legend class="h5 mb-3">Test Form</legend>
+						
+						<div class="mb-3">
+							<label for="serviceName" class="form-label">Service Name</label> 
+							<input type="text" id="serviceName" name="serviceName" class="form-control" required>
+						</div>
+
+						<div class="mb-3">
+							<label for="description" class="form-label">Description</label> 
+							<input type="text" id="description" name="description" class="form-control" required>
+						</div>
+
+						<button type="submit" class="btn btn-primary w-100">Send</button>
+					</fieldset>
+				</form>
+			</article>
+		</section>
+	</main>
 </body>
 </html>
