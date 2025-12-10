@@ -1,5 +1,8 @@
 package com.techhispania.imperator.server.services.impl;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,13 +26,15 @@ public class DeployServiceImpl implements DeployService {
 		}
 		
 		String applicationPath = new StringBuilder(DEPLOYED_PATH).append(application.getFilename()).toString();
-		String command = String.format("nohup java -jar %s > /dev/null 2>&1 &", applicationPath);
-		ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", command);
+		String command = String.format("nohup java -jar %s > /dev/null 2>&1 & echo $!", applicationPath);
 		
-		processBuilder.inheritIO();
 		try {
-			Process process = processBuilder.start();
-			logger.info("Process executed: {}", process.pid());
+			Process process = new ProcessBuilder("sh", "-c", command).start();
+			
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			String pid = br.readLine();
+			
+			logger.info("Process executed: {}", pid);
 			
 			// TODO store the PID to be able to kill it in the future 
 		} catch (Exception e) {
