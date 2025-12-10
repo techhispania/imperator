@@ -23,15 +23,15 @@ public class DeployServiceImpl implements DeployService {
 		}
 		
 		String applicationPath = new StringBuilder(DEPLOYED_PATH).append(application.getFilename()).toString();
-		ProcessBuilder processBuilder = new ProcessBuilder("java", "-jar", applicationPath);
+		String command = String.format("nohup java -jar %s > /dev/null 2>&1 &", applicationPath);
+		ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", command);
 		
 		processBuilder.inheritIO();
-		
 		try {
 			Process process = processBuilder.start();
 			logger.info("Process executed: {}", process.pid());
-			int exitCode = process.waitFor();
-			logger.info("Process finished: {}", exitCode);
+			
+			// TODO store the PID to be able to kill it in the future 
 		} catch (Exception e) {
 			logger.error("Error executing java process", e);
 		}
