@@ -11,6 +11,8 @@ import com.techhispania.imperator.common.exceptions.ImperatorException;
 import com.techhispania.imperator.common.utils.Constants;
 import com.techhispania.imperator.server.domain.model.Application;
 import com.techhispania.imperator.server.infrastructure.db.JPAUtil;
+import com.techhispania.imperator.server.infrastructure.db.repositories.ApplicationRepository;
+import com.techhispania.imperator.server.infrastructure.db.repositories.DatabaseRepository;
 import com.techhispania.imperator.server.services.DeployService;
 
 import jakarta.persistence.EntityManager;
@@ -39,10 +41,11 @@ public class DeployServiceImpl implements DeployService {
 			String pid = br.readLine();
 			
 			logger.info("Process executed: {}", pid);
+			application.setPid(pid);
 			
-			// TODO store the PID to be able to kill it in the future
 			logger.info("Saving application");
-			insert(application, pid);
+			DatabaseRepository<Application> repository = new ApplicationRepository();
+			repository.insert(application);
 			
 			logger.info("Getting all saved applications");
 			getApplications();
