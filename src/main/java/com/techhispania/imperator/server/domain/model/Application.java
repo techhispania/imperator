@@ -1,11 +1,31 @@
 package com.techhispania.imperator.server.domain.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "applications")
 public class Application {
 
-	private String name, description, filename;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private long id;
+	
+	private String name, description, filename, pid;
 	
 	private ApplicationType type;
 
+	public long getId() {
+		return id;
+	}
+
+	public void setId(long id) {
+		this.id = id;
+	}
+	
 	public String getName() {
 		return name;
 	}
@@ -30,6 +50,14 @@ public class Application {
 		this.filename = filename;
 	}
 
+	public String getPid() {
+		return pid;
+	}
+
+	public void setPid(String pid) {
+		this.pid = pid;
+	}
+
 	public ApplicationType getType() {
 		return type;
 	}
@@ -40,7 +68,7 @@ public class Application {
 
 	@Override
 	public String toString() {
-		return "Application [name=" + name + ", description=" + description + ", filename=" + filename + ", type="
-				+ type + "]";
+		return "Application [id=" + id + ", name=" + name + ", description=" + description + ", filename=" + filename
+				+ ", pid=" + pid + ", type=" + type + "]";
 	}
 }

@@ -2,6 +2,7 @@ package com.techhispania.imperator.server.services.impl;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -9,7 +10,10 @@ import org.apache.logging.log4j.Logger;
 import com.techhispania.imperator.common.exceptions.ImperatorException;
 import com.techhispania.imperator.common.utils.Constants;
 import com.techhispania.imperator.server.domain.model.Application;
+import com.techhispania.imperator.server.infrastructure.db.JPAUtil;
 import com.techhispania.imperator.server.services.DeployService;
+
+import jakarta.persistence.EntityManager;
 
 public class DeployServiceImpl implements DeployService {
 
@@ -36,9 +40,44 @@ public class DeployServiceImpl implements DeployService {
 			
 			logger.info("Process executed: {}", pid);
 			
-			// TODO store the PID to be able to kill it in the future 
+			// TODO store the PID to be able to kill it in the future
+			logger.info("Saving application");
+			insert(application, pid);
+			
+			logger.info("Getting all saved applications");
+			getApplications();
+			
 		} catch (Exception e) {
 			logger.error("Error executing java process", e);
+		}
+	}
+	
+	private void insert(Application application, String pid) {
+		EntityManager em = JPAUtil.getEntityManager();
+		try {
+		    em.getTransaction().begin();
+
+		    application.setPid(pid);
+
+		    em.persist(application);
+
+		    em.getTransaction().commit();
+
+		} finally {
+		    em.close();
+		}
+	}
+	
+	private void getApplications() {
+		EntityManager em = JPAUtil.getEntityManager();
+
+		try {
+		    List<Application> applications = em.createQuery("SELECT a FROM Application a", Application.class).getResultList();
+
+		    if (applications != null && applications.size() > 0)
+		    	applications.forEach(a -> logger.info("Application: {}", a));
+		} finally {
+		    em.close();
 		}
 	}
 	
