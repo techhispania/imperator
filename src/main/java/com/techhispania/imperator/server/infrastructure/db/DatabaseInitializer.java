@@ -12,7 +12,12 @@ public class DatabaseInitializer {
 
     private static final String JDBC_URL = "jdbc:sqlite:imperator.db";
 
-    public static void runSchemaScript() {
+    public static void init() {
+    	JPAUtil.createEntityManagerFactory();
+    	runSchemaScript();
+    }
+    
+    private static void runSchemaScript() {
         try (Connection conn = DriverManager.getConnection(JDBC_URL)) {
 
             // Load SQL file from resources

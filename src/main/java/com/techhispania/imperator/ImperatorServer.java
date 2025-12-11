@@ -14,7 +14,7 @@ public class ImperatorServer {
 	public static void main(String[] args) throws Exception {
 		logger.info("Initializing server...");
 		
-		DatabaseInitializer.runSchemaScript();
+		DatabaseInitializer.init();
 		logger.info("Database initialized");
 		
 		Loader loader = CoreFactory.createLoader();
