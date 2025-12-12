@@ -2,8 +2,9 @@ package com.techhispania.imperator.core.reflection;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import com.sun.net.httpserver.HttpExchange;
 import com.techhispania.imperator.core.factories.CoreFactory;
 import com.techhispania.imperator.core.http.dto.ImperatorResponse;
+import com.techhispania.imperator.core.templates.TemplateRender;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.Resource;
@@ -27,8 +29,17 @@ public class MethodsExecutorImpl implements MethodsExecutor {
 	private static ReflectionUtils reflectionUtils = CoreFactory.createReflectionUtils();
 	
 	public void executeGetMethod(HttpExchange exchange, Method method, Object controller) throws Exception {
-		String template = (String) method.invoke(controller); // execute the method using reflection
-		String html = getTemplateHtml(template);
+		
+		Map<String, Object> model = new HashMap<>();
+		
+		String template = null;
+		if (method.getParameterCount() == 1) {
+			template = (String) method.invoke(controller, model); // execute the method using reflection
+		} else {
+			template = (String) method.invoke(controller); // execute the method using reflection
+		}
+		template = getTemplatePath(template);
+		String html = TemplateRender.render(template, model);
 		reflectionUtils.sendHttpResponse(exchange, 200, html);
 	}
 
@@ -55,7 +66,7 @@ public class MethodsExecutorImpl implements MethodsExecutor {
 		reflectionUtils.sendHttpResponse(exchange, response.getResponseCode(), response.toString());
 	}
 	
-	private String getTemplateHtml(String template) {
+	private String getTemplatePath(String template) {
 		try (ScanResult scanResult = new ClassGraph().acceptPaths(TEMPLATES_PATH).scan()) {
 			List<String> templateFiles = scanResult.getAllResources().getPaths();
 
@@ -68,11 +79,7 @@ public class MethodsExecutorImpl implements MethodsExecutor {
 
 					Resource resource = scanResult.getResourcesWithPath(f).get(0);
 
-					try {
-						return new String(resource.load(), StandardCharsets.UTF_8);
-					} catch (IOException e) {
-						logger.error("Error reading content from template", e);
-					}
+					return resource.getPath();
 				}
 			}
 		}

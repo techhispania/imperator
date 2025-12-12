@@ -1,5 +1,7 @@
 package com.techhispania.imperator.server.controllers;
 
+import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,8 +22,10 @@ public class ServerController {
 	private final DeployService deployService = DeployServiceFactory.createDeployServiceImpl();
 	
 	@GetRequest
-	public String index() {
+	public String index(Map<String, Object> model) {
 		logger.debug("Index Request");
+		
+		model.put("appName", "Imperator");
 		
 		return "index";
 	}
