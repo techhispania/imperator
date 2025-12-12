@@ -1,6 +1,7 @@
 package com.techhispania.imperator.core.reflection;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,8 +14,10 @@ public class ReflectionUtilsImpl implements ReflectionUtils {
 	
 	public void sendHttpResponse(HttpExchange exchange, int responseCode, String responseContent) {
 		try {
-			exchange.sendResponseHeaders(responseCode, responseContent.length());
-			exchange.getResponseBody().write(responseContent.getBytes());
+			byte[] responseBytes = responseContent.getBytes(StandardCharsets.UTF_8);
+			
+			exchange.sendResponseHeaders(responseCode, responseBytes.length);
+			exchange.getResponseBody().write(responseBytes);
 			exchange.close();
 		} catch (IOException e) {
 			logger.error("Error sending response.", e);
