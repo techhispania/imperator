@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.techhispania.imperator.core.factories.CoreFactory;
 import com.techhispania.imperator.core.loader.Loader;
+import com.techhispania.imperator.server.infrastructure.db.DatabaseInitializer;
 
 public class ImperatorServer {
 
@@ -12,6 +13,9 @@ public class ImperatorServer {
 	
 	public static void main(String[] args) throws Exception {
 		logger.info("Initializing server...");
+		
+		DatabaseInitializer.init();
+		logger.info("Database initialized");
 		
 		Loader loader = CoreFactory.createLoader();
 		loader.run();		

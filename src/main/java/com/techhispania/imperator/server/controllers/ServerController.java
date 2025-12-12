@@ -7,14 +7,17 @@ import com.techhispania.imperator.common.annotations.Controller;
 import com.techhispania.imperator.common.annotations.GetRequest;
 import com.techhispania.imperator.common.annotations.PostRequest;
 import com.techhispania.imperator.common.annotations.RequestBody;
-import com.techhispania.imperator.core.http.dto.ImperatorResponse;
 import com.techhispania.imperator.server.dto.DeployRequestDTO;
-import com.techhispania.imperator.server.dto.DeployResponseDTO;
+import com.techhispania.imperator.server.dto.mappers.ApplicationMapper;
+import com.techhispania.imperator.server.services.DeployService;
+import com.techhispania.imperator.server.services.factories.DeployServiceFactory;
 
 @Controller
 public class ServerController {
 
 	private static final Logger logger = LogManager.getLogger(ServerController.class);
+	
+	private final DeployService deployService = DeployServiceFactory.createDeployServiceImpl();
 	
 	@GetRequest
 	public String index() {
@@ -32,14 +35,19 @@ public class ServerController {
 	
 	@PostRequest("/deploy")
 	public String deploy(@RequestBody DeployRequestDTO request) {
-	//public ImperatorResponse<DeployResponseDTO> deploy(@RequestBody DeployRequestDTO request) {
 		logger.debug("Deploy service: {}", request);
 		
-		//DeployResponseDTO response = new DeployResponseDTO("Service deployed");
+		deployService.deployApplication(ApplicationMapper.buildApplicationFromDeployRequestDTO(request));
 		
-		//return new ImperatorResponse<DeployResponseDTO>(200, response);
 		return "/";
-	}	
+	}
+	
+//	@PostRequest("/rest-example")
+//	public ImperatorResponse<DeployResponseDTO> restExample(@RequestBody DeployRequestDTO request) {
+//		logger.debug("Deploy service: {}", request);
+//		
+//		DeployResponseDTO response = new DeployResponseDTO("Service deployed");
+//		
+//		return new ImperatorResponse<DeployResponseDTO>(200, response);
+//	}
 }
-
-

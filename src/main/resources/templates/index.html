@@ -10,8 +10,10 @@
 </head>
 <body class="bg-light">
 	<header class="container py-5 text-center">
-		<h1>Imperator Admin Panel</h1>
-		<p class="lead">Welcome to the Admin Panel of Imperator Server. Select your microservices to deploy</p>
+		<h1>Welcome to the Imperator Server Admin Panel.</h1>
+		<p class="lead">
+		Manage and deploy your Java applications, including standard JARs, Spring Boot microservices, etc...
+		</p>
 	</header>
 
 	<main class="container">
@@ -20,10 +22,21 @@
 				<form action="/deploy" method="POST" enctype="multipart/form-data" class="card p-4 shadow-sm bg-white">
 					<fieldset>
 						<legend class="h5 mb-3">Upload Your File</legend>
+
+						<div class="mb-3">
+							<label for="applicationType" class="form-label">Application Type</label>
+							<select id="applicationType" name="applicationType" class="form-select" required>
+								<option value="" selected disabled>-- Select application type --</option>
+								<option value="jar">Standard JAR Application</option>
+								<option value="spring-boot">Spring Boot Microservice</option>
+								<option value="quarkus">Quarkus Application</option>
+								<option value="micronaut">Micronaut Service</option>
+							</select>
+						</div>
 						
 						<div class="mb-3">
-							<label for="serviceName" class="form-label">Service Name</label> 
-							<input type="text" id="serviceName" name="serviceName" class="form-control" required>
+							<label for="applicationName" class="form-label">Application Name</label> 
+							<input type="text" id="applicationName" name="applicationName" class="form-control" required>
 						</div>
 
 						<div class="mb-3">
@@ -37,28 +50,6 @@
 						</div>
 
 						<button type="submit" class="btn btn-primary w-100">Deploy</button>
-					</fieldset>
-				</form>
-			</article>
-		</section>
-		
-		<section class="row justify-content-center">
-			<article class="col-12 col-md-6">
-				<form action="/deploy" method="POST" class="card p-4 shadow-sm bg-white">
-					<fieldset>
-						<legend class="h5 mb-3">Test Form</legend>
-						
-						<div class="mb-3">
-							<label for="serviceName" class="form-label">Service Name</label> 
-							<input type="text" id="serviceName" name="serviceName" class="form-control" required>
-						</div>
-
-						<div class="mb-3">
-							<label for="description" class="form-label">Description</label> 
-							<input type="text" id="description" name="description" class="form-control" required>
-						</div>
-
-						<button type="submit" class="btn btn-primary w-100">Send</button>
 					</fieldset>
 				</form>
 			</article>
