@@ -10,18 +10,17 @@ import org.apache.logging.log4j.Logger;
 import com.techhispania.imperator.common.exceptions.ImperatorException;
 import com.techhispania.imperator.common.utils.Constants;
 import com.techhispania.imperator.server.domain.model.Application;
-import com.techhispania.imperator.server.infrastructure.db.JPAUtil;
 import com.techhispania.imperator.server.infrastructure.db.repositories.ApplicationRepository;
-import com.techhispania.imperator.server.infrastructure.db.repositories.DatabaseRepository;
+import com.techhispania.imperator.server.infrastructure.db.repositories.RepositoriesFactory;
 import com.techhispania.imperator.server.services.DeployService;
-
-import jakarta.persistence.EntityManager;
 
 public class DeployServiceImpl implements DeployService {
 
 	private static final Logger logger = LogManager.getLogger(DeployServiceImpl.class);
 	
 	private static final String DEPLOYED_PATH = "../deployed/";
+	
+	private static final ApplicationRepository applicationRepository = RepositoriesFactory.createApplicationRepository();
 	
 	@Override
 	public void deployApplication(Application application) throws ImperatorException {
@@ -44,43 +43,9 @@ public class DeployServiceImpl implements DeployService {
 			application.setPid(pid);
 			
 			logger.info("Saving application");
-			DatabaseRepository<Application> repository = new ApplicationRepository();
-			repository.insert(application);
-			
-			logger.info("Getting all saved applications");
-			getApplications();
-			
+			applicationRepository.save(application);
 		} catch (Exception e) {
 			logger.error("Error executing java process", e);
-		}
-	}
-	
-	private void insert(Application application, String pid) {
-		EntityManager em = JPAUtil.getEntityManager();
-		try {
-		    em.getTransaction().begin();
-
-		    application.setPid(pid);
-
-		    em.persist(application);
-
-		    em.getTransaction().commit();
-
-		} finally {
-		    em.close();
-		}
-	}
-	
-	private void getApplications() {
-		EntityManager em = JPAUtil.getEntityManager();
-
-		try {
-		    List<Application> applications = em.createQuery("SELECT a FROM Application a", Application.class).getResultList();
-
-		    if (applications != null && applications.size() > 0)
-		    	applications.forEach(a -> logger.info("Application: {}", a));
-		} finally {
-		    em.close();
 		}
 	}
 	

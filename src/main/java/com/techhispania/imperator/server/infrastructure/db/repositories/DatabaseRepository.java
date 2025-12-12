@@ -1,22 +1,10 @@
 package com.techhispania.imperator.server.infrastructure.db.repositories;
 
-import com.techhispania.imperator.server.infrastructure.db.JPAUtil;
-
-import jakarta.persistence.EntityManager;
+import java.util.List;
 
 public interface DatabaseRepository<T> {
-
-	public default void insert(T entity) {
-		EntityManager em = JPAUtil.getEntityManager();
-		try {
-		    em.getTransaction().begin();
-
-		    em.persist(entity);
-
-		    em.getTransaction().commit();
-
-		} finally {
-		    em.close();
-		}
-	}
+	
+	public void save(T entity);
+	
+	public List<T> findAll();
 }
