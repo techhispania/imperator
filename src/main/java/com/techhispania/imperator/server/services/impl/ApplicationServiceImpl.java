@@ -40,10 +40,10 @@ public class ApplicationServiceImpl implements ApplicationService {
 			logger.info("Processing the application: {}", a.getName());
 			
 			String port = "";
-			String status = "";
-			if (a.getPid() != null && a.getPid().length() > 0) {
-				port = commandsService.getServicePort(a.getPid());
-				status = String.valueOf(commandsService.isProcessRunning(a.getPid()));	
+			String status = "STOPPED";
+			if (a.getPid() != null && a.getPid().length() > 0 && commandsService.isProcessRunning(a.getPid())) {
+				status = "RUNNING";
+				port = commandsService.getServicePort(a.getPid()).orElse("");
 			}
 			ApplicationDTO dto = new ApplicationDTO(a.getName(), port, status, a.getPid() != null ? a.getPid() : "");
 			result.add(dto);

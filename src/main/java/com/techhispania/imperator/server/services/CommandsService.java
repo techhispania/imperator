@@ -1,5 +1,7 @@
 package com.techhispania.imperator.server.services;
 
+import java.util.Optional;
+
 import com.techhispania.imperator.common.exceptions.ImperatorException;
 
 public interface CommandsService {
@@ -17,8 +19,8 @@ public interface CommandsService {
 	 * Get the port where a microservice is running
 	 * 
 	 * @param pid The process id where the microservice is running
-	 * @return The port found
+	 * @return Optional of the port found. Empty if no port is found
 	 * @throws ImperatorException
 	 */
-	String getServicePort(String pid) throws ImperatorException;
+	Optional<String> getServicePort(String pid) throws ImperatorException;
 }
