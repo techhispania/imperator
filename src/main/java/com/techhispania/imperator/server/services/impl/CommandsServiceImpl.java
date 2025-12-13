@@ -60,7 +60,13 @@ public class CommandsServiceImpl implements CommandsService {
 	
 	private Process executeCommand(String command) throws IOException {
 		ProcessBuilder processBuilder = new ProcessBuilder("sh", "-c", command);
-		return processBuilder.start();
+		Process process = processBuilder.start();
+		try {
+			process.waitFor();
+		} catch (InterruptedException e) {
+			logger.warn("Error waiting for process to be finished.", e);
+		}
+		return process;
 	}
 	
 	private String readCommandOutput(Process process) throws IOException {

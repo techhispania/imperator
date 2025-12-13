@@ -35,6 +35,8 @@ public class DeployServiceImpl implements DeployService {
 		try {
 			Process process = new ProcessBuilder("sh", "-c", command).start();
 			
+			process.waitFor();
+			
 			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
 			String pid = br.readLine();
 			
