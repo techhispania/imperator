@@ -2,6 +2,7 @@ package com.techhispania.imperator.server.services.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,28 +26,36 @@ public class ApplicationServiceImpl implements ApplicationService {
 	
 	@Override
 	public List<ApplicationDTO> getAllDeployedApplications() throws ImperatorException {
-		
 		List<Application> applications = applicationRepository.findAll();
 		
 		List<ApplicationDTO> result = new ArrayList<>();
 		if (applications.size() > 0) {
-			processApplication(applications, result);
+			applications.forEach(a -> result.add(processApplication(a)));
+			
 		}
 		return result;
 	}
+	
+	@Override
+	public Optional<ApplicationDTO> checkApplicationStatus(String name) throws ImperatorException {
+		Application application = applicationRepository.findBy("name", name);
+		
+		if (application == null) {
+			logger.info("No application found in database with name {}", name);
+			return Optional.empty();
+		}
+		return Optional.of(processApplication(application));
+	}
 
-	private void processApplication(List<Application> applications, List<ApplicationDTO> result) {
-		applications.forEach(a -> {
-			logger.info("Processing the application: {}", a.getName());
-			
-			String port = "";
-			String status = "STOPPED";
-			if (a.getPid() != null && a.getPid().length() > 0 && commandsService.isProcessRunning(a.getPid())) {
-				status = "RUNNING";
-				port = commandsService.getServicePort(a.getPid()).orElse("");
-			}
-			ApplicationDTO dto = new ApplicationDTO(a.getName(), port, status, a.getPid() != null ? a.getPid() : "");
-			result.add(dto);
-		});
+	private ApplicationDTO processApplication(Application application) {
+		logger.info("Processing the application: {}", application.getName());
+		
+		String port = "";
+		String status = "STOPPED";
+		if (application.getPid() != null && application.getPid().length() > 0 && commandsService.isProcessRunning(application.getPid())) {
+			status = "RUNNING";
+			port = commandsService.getServicePort(application.getPid()).orElse("");
+		}
+		return new ApplicationDTO(application.getName(), port, status, application.getPid() != null ? application.getPid() : "");		
 	}
 }

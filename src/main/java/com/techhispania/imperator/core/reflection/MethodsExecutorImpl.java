@@ -17,6 +17,7 @@ import com.techhispania.imperator.core.templates.TemplateRender;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.Resource;
 import io.github.classgraph.ScanResult;
+import tools.jackson.databind.ObjectMapper;
 
 public class MethodsExecutorImpl implements MethodsExecutor {
 
@@ -63,7 +64,9 @@ public class MethodsExecutorImpl implements MethodsExecutor {
 		} else {
 			response = (ImperatorResponse<?>) method.invoke(controller); // execute the method using reflection
 		}
-		reflectionUtils.sendHttpResponse(exchange, response.getResponseCode(), response.toString());
+		ObjectMapper mapper = new ObjectMapper();
+		String jsonResponse = mapper.writeValueAsString(response);
+		reflectionUtils.sendHttpResponse(exchange, response.getResponseCode(), jsonResponse);
 	}
 	
 	private String getTemplatePath(String template) {

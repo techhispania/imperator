@@ -27,10 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						"Accept": "appliation/json"
+						"Accept": "application/json"
 					},
 					body: JSON.stringify({
-						name: service_name,
+						serviceName: service_name,
 					})
 				})
 				
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 			
 			const data = await response.json()
-			console.log(`Port: ${data.port}, PID: ${data.pid}`)
+			console.log(`Name: ${data.body.serviceName}, Port: ${data.body.port}, PID: ${data.body.pid}, Status: ${data.body.status}`)
 			
 			return data
 		} catch (err) {

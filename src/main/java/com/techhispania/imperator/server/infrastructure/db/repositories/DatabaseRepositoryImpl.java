@@ -54,4 +54,20 @@ public abstract class DatabaseRepositoryImpl<T> implements DatabaseRepository<T>
 			em.close();
 		}
 	}
+	
+	public T findBy(String column, String value) throws ImperatorException {
+		EntityManager em = JPAUtil.getEntityManager();
+		
+		String entityName = entityClass.getSimpleName();
+		
+		try {
+			T result = em.createQuery(String.format("SELECT e FROM %s e WHERE e.%s = '%s'", entityName, column, value), entityClass).getSingleResult();
+			return result;
+		} catch (Exception e) {
+			logger.error("Error executing query.", e);
+			throw new ImperatorException(Constants.HTTP_CODE_INTERNAL_SERVER_ERROR, String.format("Error executing query. %s", e.getMessage()));			
+		} finally {
+			em.close();
+		}
+	}
 }

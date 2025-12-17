@@ -1,11 +1,14 @@
 package com.techhispania.imperator.server.controllers;
 
+import java.util.Optional;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.techhispania.imperator.common.annotations.Controller;
 import com.techhispania.imperator.common.annotations.PostRequest;
 import com.techhispania.imperator.common.annotations.RequestBody;
+import com.techhispania.imperator.common.exceptions.ImperatorException;
 import com.techhispania.imperator.common.utils.Constants;
 import com.techhispania.imperator.core.http.dto.ImperatorResponse;
 import com.techhispania.imperator.server.dto.ApplicationDTO;
@@ -23,14 +26,18 @@ public class RestController {
 	
 	@PostRequest("/api/service/check")
 	public ImperatorResponse<CheckServiceStatusResponse> checkServiceStatus(@RequestBody CheckServiceStatusRequest request) {
-		logger.debug("Deploy service: {}", request);
+		logger.debug("Check Service status request: {}", request);
 		
-		ApplicationDTO applicationStatus = applicationService.checkApplicationStatus(request.serviceName());
+		Optional<ApplicationDTO> applicationStatus = applicationService.checkApplicationStatus(request.serviceName());
 		
-		CheckServiceStatusResponse response = new CheckServiceStatusResponse(applicationStatus.name(), 
-																			applicationStatus.status(), 
-																			applicationStatus.port(), 
-																			applicationStatus.pid());
+		if (applicationStatus.isEmpty()) {
+			throw new ImperatorException(Constants.HTTP_CODE_NOT_FOUND, String.format("Application '%s' not found"));
+		}
+		
+		CheckServiceStatusResponse response = new CheckServiceStatusResponse(applicationStatus.get().name(), 
+																			applicationStatus.get().status(), 
+																			applicationStatus.get().port(), 
+																			applicationStatus.get().pid());
 		
 		return new ImperatorResponse<CheckServiceStatusResponse>(Constants.HTTP_CODE_SUCCESS, response);
 	}

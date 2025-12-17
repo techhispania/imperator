@@ -1,6 +1,7 @@
 package com.techhispania.imperator.server.services;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.techhispania.imperator.common.exceptions.ImperatorException;
 import com.techhispania.imperator.server.dto.ApplicationDTO;
@@ -23,5 +24,5 @@ public interface ApplicationService {
 	 * @return The application status
 	 * @throws ImperatorException
 	 */
-	ApplicationDTO checkApplicationStatus(String name) throws ImperatorException;
+	Optional<ApplicationDTO> checkApplicationStatus(String name) throws ImperatorException;
 }
