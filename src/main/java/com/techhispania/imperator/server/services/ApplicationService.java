@@ -15,4 +15,13 @@ public interface ApplicationService {
 	 * @throws ImperatorException
 	 */
 	List<ApplicationDTO> getAllDeployedApplications() throws ImperatorException;
+	
+	/**
+	 * Checks the current status of one application
+	 * 
+	 * @param name The name of the application
+	 * @return The application status
+	 * @throws ImperatorException
+	 */
+	ApplicationDTO checkApplicationStatus(String name) throws ImperatorException;
 }
