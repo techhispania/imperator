@@ -16,6 +16,8 @@ import com.techhispania.imperator.server.services.ApplicationService;
 import com.techhispania.imperator.server.services.CommandsService;
 import com.techhispania.imperator.server.services.factories.CommandsServiceFactory;
 
+import jakarta.transaction.Transactional;
+
 public class ApplicationServiceImpl implements ApplicationService {
 
 	private static final Logger logger = LogManager.getLogger(ApplicationServiceImpl.class);
@@ -37,13 +39,15 @@ public class ApplicationServiceImpl implements ApplicationService {
 	}
 	
 	@Override
+	@Transactional
 	public Optional<ApplicationDTO> checkApplicationStatus(String name) throws ImperatorException {
 		Application application = applicationRepository.findBy("name", name);
 		
 		if (application == null) {
-			logger.info("No application found in database with name {}", name);
+			logger.debug("No application found in database with name {}", name);
 			return Optional.empty();
 		}
+		
 		return Optional.of(processApplication(application));
 	}
 
@@ -55,6 +59,8 @@ public class ApplicationServiceImpl implements ApplicationService {
 		if (application.getPid() != null && application.getPid().length() > 0 && commandsService.isProcessRunning(application.getPid())) {
 			status = "RUNNING";
 			port = commandsService.getServicePort(application.getPid()).orElse("");
+		} else {
+			application.setPid(null);
 		}
 		return new ApplicationDTO(application.getName(), port, status, application.getPid() != null ? application.getPid() : "");		
 	}

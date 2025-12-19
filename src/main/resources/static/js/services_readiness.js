@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		
 		console.log(`Found ${services.length} services`)
 		
-		services.forEach(service => {
+		services.forEach(async service => {
 			
 			var id = service.id
 			var service_name = id.split("service_")[1]
@@ -15,9 +15,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			
 			console.log(`service ${service_name}: ${content}`)
 			
-			service_status = checkService(service_name)
+			service_status = await checkService(service_name)
 			
-			// TODO update the html page
+			var text = document.querySelector(`#service_${service_name}`);
+			text.textContent = `Port: ${service_status.body.port} | PID: ${service_status.body.pid}`;
 		})
 	}, 5000);
 	
