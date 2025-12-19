@@ -61,6 +61,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 			port = commandsService.getServicePort(application.getPid()).orElse("");
 		} else {
 			application.setPid(null);
+			applicationRepository.update(application);
 		}
 		return new ApplicationDTO(application.getName(), port, status, application.getPid() != null ? application.getPid() : "");		
 	}

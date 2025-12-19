@@ -17,8 +17,18 @@ document.addEventListener("DOMContentLoaded", () => {
 			
 			service_status = await checkService(service_name)
 			
-			var text = document.querySelector(`#service_${service_name}`);
-			text.textContent = `Port: ${service_status.body.port} | PID: ${service_status.body.pid}`;
+			var text = document.querySelector(`#service_${service_name}`)
+			text.textContent = `Port: ${service_status.body.port} | PID: ${service_status.body.pid}`
+			
+			var circle_class = "bg-danger"
+			if ("RUNNING" === service_status.body.status) {
+				circle_class = "bg-success"
+			}
+			
+			var circle = document.querySelector(`#circle_${service_name}`)
+			circle.classList.remove("bg_danger")
+			circle.classList.remove("bg-success")
+			circle.classList.add(circle_class)
 		})
 	}, 5000);
 	
