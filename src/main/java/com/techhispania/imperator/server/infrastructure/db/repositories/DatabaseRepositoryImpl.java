@@ -38,6 +38,27 @@ public abstract class DatabaseRepositoryImpl<T> implements DatabaseRepository<T>
 		}
 	}
 	
+	public T update(T entity) throws ImperatorException {
+		EntityManager em = JPAUtil.getEntityManager();
+		try {
+		    em.getTransaction().begin();
+
+		    T mergedEntity = em.merge(entity);
+
+		    em.getTransaction().commit();
+		    
+		    return mergedEntity;
+		} catch (Exception e) {
+			if (em.getTransaction().isActive()) {
+				em.getTransaction().rollback();
+			}
+			logger.error("Error updating entity.", e);
+			throw new ImperatorException(Constants.HTTP_CODE_INTERNAL_SERVER_ERROR, String.format("Error updating entity. %s", e.getMessage()));
+		} finally {
+		    em.close();
+		}
+	}
+	
 	public List<T> findAll() throws ImperatorException {
 		EntityManager em = JPAUtil.getEntityManager();
 		
@@ -50,6 +71,22 @@ public abstract class DatabaseRepositoryImpl<T> implements DatabaseRepository<T>
 		} catch (Exception e) {
 			logger.error("Error executing query.", e);
 			throw new ImperatorException(Constants.HTTP_CODE_INTERNAL_SERVER_ERROR, String.format("Error executing query. %s", e.getMessage()));
+		} finally {
+			em.close();
+		}
+	}
+	
+	public T findBy(String column, String value) throws ImperatorException {
+		EntityManager em = JPAUtil.getEntityManager();
+		
+		String entityName = entityClass.getSimpleName();
+		
+		try {
+			T result = em.createQuery(String.format("SELECT e FROM %s e WHERE e.%s = '%s'", entityName, column, value), entityClass).getSingleResult();
+			return result;
+		} catch (Exception e) {
+			logger.error("Error executing query.", e);
+			throw new ImperatorException(Constants.HTTP_CODE_INTERNAL_SERVER_ERROR, String.format("Error executing query. %s", e.getMessage()));			
 		} finally {
 			em.close();
 		}

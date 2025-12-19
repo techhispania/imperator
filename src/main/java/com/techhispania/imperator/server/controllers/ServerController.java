@@ -56,13 +56,4 @@ public class ServerController {
 		
 		return "/";
 	}
-	
-//	@PostRequest("/rest-example")
-//	public ImperatorResponse<DeployResponseDTO> restExample(@RequestBody DeployRequestDTO request) {
-//		logger.debug("Deploy service: {}", request);
-//		
-//		DeployResponseDTO response = new DeployResponseDTO("Service deployed");
-//		
-//		return new ImperatorResponse<DeployResponseDTO>(200, response);
-//	}
 }
