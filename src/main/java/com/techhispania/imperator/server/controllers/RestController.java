@@ -41,4 +41,11 @@ public class RestController {
 		
 		return new ImperatorResponse<CheckServiceStatusResponse>(Constants.HTTP_CODE_SUCCESS, response);
 	}
+	
+	@PostRequest("/api/service/start")
+	public ImperatorResponse<StartServiceResponse> startService(@RequestBody StartServiceRequest request) {
+		StartServiceResponse response = new StartServiceResponse("SUCCESS");
+
+		return new ImperatorResponse<CheckServiceStatusResponse>(Constants.HTTP_CODE_SUCCESS, response);
+	}
 }

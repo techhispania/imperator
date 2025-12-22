@@ -18,6 +18,6 @@ public class ImperatorServer {
 		logger.info("Database initialized");
 		
 		Loader loader = CoreFactory.createLoader();
-		loader.run();		
+		loader.run();
 	}
 }
